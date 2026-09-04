@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.env
+.venv/
+
+# Flask / App runtime folders (auto-created, never commit)
+uploads/
+extracted_firmware/
+
+# Generated reports (generated in-memory, no disk file now)
+*.pdf
+
+# Scan history (runtime data, not source code)
+scan_history.json
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# TESTING FILES
+.zip
+.tar
+.gz
+.bin
+.bz2
+.img
+.fw
