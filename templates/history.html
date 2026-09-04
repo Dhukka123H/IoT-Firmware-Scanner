@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan History | IoT Firmware Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-900: #0a0f1e;
+            --bg-800: #0f172a;
+            --bg-700: #1e293b;
+            --border: #1e2d45;
+            --border-2: #2d3f58;
+            --text-1: #f1f5f9;
+            --text-2: #94a3b8;
+            --text-3: #64748b;
+            --brand: #0ea5e9;
+            --brand-2: #38bdf8;
+            --critical: #ef4444;
+            --high: #f97316;
+            --medium: #eab308;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-900);
+            color: var(--text-1);
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 0%, rgba(14, 165, 233, 0.07) 0%, transparent 60%);
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--brand);
+        }
+
+        .nav-link {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            text-decoration: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            transition: all .2s;
+        }
+
+        .nav-link:hover {
+            background: var(--bg-700);
+            color: var(--text-1);
+        }
+
+        .nav-link.active {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--brand);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 1.75rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-1);
+            margin-bottom: 0.25rem;
+        }
+
+        .page-sub {
+            font-size: 0.85rem;
+            color: var(--text-3);
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .stat-num {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            color: var(--text-3);
+            margin-top: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Table */
+        .table-wrap {
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--bg-700);
+        }
+
+        th {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.82rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(14, 165, 233, 0.03);
+        }
+
+        .filename {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--brand-2);
+        }
+
+        .timestamp {
+            color: var(--text-3);
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .badge-critical {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--critical);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge-high {
+            background: rgba(249, 115, 22, 0.15);
+            color: var(--high);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .badge-medium {
+            background: rgba(234, 179, 8, 0.15);
+            color: var(--medium);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .badge-ok {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-moderate {
+            background: rgba(234, 179, 8, 0.15);
+            color: var(--medium);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+        }
+
+        .badge-low {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .score-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-bar {
+            height: 5px;
+            border-radius: 3px;
+            width: 80px;
+            background: var(--border);
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .score-num {
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-3);
+        }
+
+        .empty-state .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.4;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            color: var(--brand);
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all .2s;
+        }
+
+        .btn-back:hover {
+            background: rgba(14, 165, 233, 0.18);
+        }
+
+        .btn-clear {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--critical);
+            font-size: 0.78rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .btn-clear:hover {
+            background: rgba(239, 68, 68, 0.18);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-brand">🛡️ IoT Firmware Auditor</div>
+        <div style="display:flex; gap:1rem;">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/history" class="nav-link active">Scan History</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header"
+            style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <div class="page-title">🕒 Scan History</div>
+                <div class="page-sub">Last {{ history|length }} firmware audits</div>
+            </div>
+            <div style="display:flex; gap:0.75rem; align-items:center;">
+                <a href="/" class="btn-back">← Back to Dashboard</a>
+                {% if history %}
+                <form action="/clear-history" method="POST" style="display:inline;">
+                    <button type="submit" class="btn-clear">🗑 Clear All</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if history %}
+        <!-- Summary Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--brand);">{{ history|length }}</div>
+                <div class="stat-label">Total Scans</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num c-critical" style="color:var(--critical);">{{ history | sum(attribute='critical')
+                    }}</div>
+                <div class="stat-label">Critical Findings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--high);">{{ history | sum(attribute='high') }}</div>
+                <div class="stat-label">High Findings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--text-1);">{{ history | sum(attribute='total_findings') }}</div>
+                <div class="stat-label">Total Vectors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" style="color:var(--medium);">
+                    {% if history %}{{ (history | sum(attribute='risk_score') / history|length) | round(0) | int }}{%
+                    else %}0{% endif %}
+                </div>
+                <div class="stat-label">Avg Risk Score</div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Firmware File</th>
+                        <th>Scan Timestamp</th>
+                        <th>Risk Score</th>
+                        <th>Status</th>
+                        <th>Critical</th>
+                        <th>High</th>
+                        <th>Medium</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in history %}
+                    <tr>
+                        <td style="color:var(--text-3); font-size:0.75rem;">{{ loop.index }}</td>
+                        <td>
+                            <div class="filename">{{ h.filename }}</div>
+                        </td>
+                        <td>
+                            <div class="timestamp">{{ h.timestamp }}</div>
+                        </td>
+                        <td>
+                            <div class="score-bar-wrap">
+                                <div class="score-bar">
+                                    {% if h.risk_label in ['CRITICAL'] %}
+                                    {% set fill_color = '#ef4444' %}
+                                    {% elif h.risk_label == 'HIGH' %}
+                                    {% set fill_color = '#f97316' %}
+                                    {% elif h.risk_label == 'MODERATE' %}
+                                    {% set fill_color = '#eab308' %}
+                                    {% else %}
+                                    {% set fill_color = '#22c55e' %}
+                                    {% endif %}
+                                    <div class="score-fill"
+                                        style="width:{{ h.risk_score }}%; background:{{ fill_color }};"></div>
+                                </div>
+                                <span class="score-num" style="color:{{ fill_color }};">{{ h.risk_score }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% set lbl = h.risk_label | lower %}
+                            <span class="badge badge-{{ lbl }}">{{ h.risk_label }}</span>
+                        </td>
+                        <td style="color:var(--critical); font-weight:700; font-family:'JetBrains Mono',monospace;">{{
+                            h.critical }}</td>
+                        <td style="color:var(--high);     font-weight:700; font-family:'JetBrains Mono',monospace;">{{
+                            h.high }}</td>
+                        <td style="color:var(--medium);   font-weight:700; font-family:'JetBrains Mono',monospace;">{{
+                            h.medium }}</td>
+                        <td style="color:var(--text-1);   font-weight:700; font-family:'JetBrains Mono',monospace;">{{
+                            h.total_findings }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% else %}
+        <div class="table-wrap">
+            <div class="empty-state">
+                <div class="icon">📭</div>
+                <div style="font-size:0.9rem; font-weight:600; color:var(--text-2); margin-bottom:0.5rem;">No Scan
+                    History Yet</div>
+                <div style="font-size:0.8rem; margin-bottom:1.5rem;">Upload and scan a firmware package to see records
+                    here.</div>
+                <a href="/" class="btn-back">Go to Dashboard</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>

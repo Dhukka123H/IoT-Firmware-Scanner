@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Firmware Threat Auditor | Cyber Defense Console</title>
+    <meta name="description" content="Professional IoT firmware vulnerability scanner — detect hardcoded credentials, private keys, backdoor IPs and more.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-900:   #0a0f1e;
+            --bg-800:   #0f172a;
+            --bg-700:   #1e293b;
+            --bg-600:   #263045;
+            --border:   #1e2d45;
+            --border-2: #2d3f58;
+            --text-1:   #f1f5f9;
+            --text-2:   #94a3b8;
+            --text-3:   #64748b;
+            --brand:    #0ea5e9;
+            --brand-2:  #38bdf8;
+            --critical: #ef4444;
+            --high:     #f97316;
+            --medium:   #eab308;
+            --success:  #22c55e;
+            --glow:     0 0 20px rgba(14,165,233,0.15);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-900);
+            color: var(--text-1);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(14,165,233,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(99,102,241,0.05) 0%, transparent 60%);
+        }
+
+        /* ── Navbar ── */
+        .navbar {
+            background: rgba(15,23,42,0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--brand);
+            letter-spacing: -0.02em;
+        }
+        .nav-brand .shield { font-size: 1.3rem; }
+        .nav-pill {
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(14,165,233,0.1);
+            border: 1px solid rgba(14,165,233,0.2);
+            color: var(--brand);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .nav-links { display: flex; align-items: center; gap: 1rem; }
+        .nav-link {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            text-decoration: none;
+            padding: 5px 12px;
+            border-radius: 6px;
+            transition: all .2s;
+        }
+        .nav-link:hover { background: var(--bg-700); color: var(--text-1); }
+        .nav-link.active { background: rgba(14,165,233,0.1); color: var(--brand); }
+
+        /* ── Layout ── */
+        .container { max-width: 1280px; margin: 0 auto; padding: 2rem 2rem; }
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-3);
+            margin-bottom: 1rem;
+        }
+
+        /* ── Upload Zone ── */
+        .upload-zone {
+            border: 2px dashed var(--border-2);
+            border-radius: 10px;
+            padding: 2rem 1rem;
+            text-align: center;
+            transition: all .3s;
+            cursor: pointer;
+            position: relative;
+            background: rgba(14,165,233,0.02);
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--brand);
+            background: rgba(14,165,233,0.06);
+            box-shadow: var(--glow);
+        }
+        .upload-zone input[type="file"] {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            opacity: 0; cursor: pointer;
+        }
+        .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .upload-text { font-size: 0.8rem; color: var(--text-2); line-height: 1.6; }
+        .upload-accepted { font-size: 0.7rem; color: var(--text-3); margin-top: 0.4rem; font-family: 'JetBrains Mono', monospace; }
+        .file-preview {
+            display: none;
+            margin-top: 0.75rem;
+            background: rgba(14,165,233,0.07);
+            border: 1px solid rgba(14,165,233,0.2);
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.78rem;
+            color: var(--brand-2);
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+        }
+        .file-preview.visible { display: block; }
+
+        /* ── Execute Button ── */
+        .btn-execute {
+            width: 100%;
+            background: linear-gradient(135deg, #0284c7, #0ea5e9);
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all .2s;
+            letter-spacing: 0.03em;
+            box-shadow: 0 4px 15px rgba(14,165,233,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-execute:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(14,165,233,0.35); }
+        .btn-execute:active { transform: translateY(0); }
+        .btn-execute:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* ── Severity Legend ── */
+        .legend { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+        .legend-row { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; margin-bottom: 8px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot-critical { background: var(--critical); box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+        .dot-high     { background: var(--high);     box-shadow: 0 0 6px rgba(249,115,22,0.5); }
+        .dot-medium   { background: var(--medium);   box-shadow: 0 0 6px rgba(234,179,8,0.5); }
+        .dot-ok       { background: var(--success);  box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+        .legend-label { font-weight: 700; }
+        .c-critical { color: var(--critical); }
+        .c-high     { color: var(--high); }
+        .c-medium   { color: var(--medium); }
+        .c-ok       { color: var(--success); }
+        .legend-desc { color: var(--text-3); }
+
+        /* ── History Sidebar ── */
+        .history-list { display: flex; flex-direction: column; gap: 6px; }
+        .history-item {
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            font-size: 0.72rem;
+        }
+        .history-item-name { color: var(--text-1); font-weight: 600; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-item-meta { color: var(--text-3); margin-top: 2px; }
+        .history-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+        .badge-critical { background: rgba(239,68,68,0.15); color: var(--critical); }
+        .badge-high     { background: rgba(249,115,22,0.15); color: var(--high); }
+        .badge-ok       { background: rgba(34,197,94,0.15);  color: var(--success); }
+        .no-history { font-size: 0.78rem; color: var(--text-3); text-align: center; padding: 1rem 0; }
+
+        /* ── Main Panel ── */
+        .main-panel { display: flex; flex-direction: column; gap: 1.25rem; }
+
+        /* ── Risk Score Bar ── */
+        .risk-bar-wrap {
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .risk-score-circle {
+            flex-shrink: 0;
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border: 3px solid;
+            line-height: 1;
+        }
+        .risk-score-label { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.08em; margin-top: 2px; }
+        .risk-stats { display: flex; gap: 2rem; flex-wrap: wrap; }
+        .risk-stat { text-align: center; }
+        .risk-stat-num { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+        .risk-stat-label { font-size: 0.7rem; color: var(--text-3); margin-top: 2px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .risk-divider { width: 1px; background: var(--border); height: 50px; }
+        .risk-status-badge {
+            margin-left: auto;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border: 1px solid;
+        }
+
+        /* ── Scan Meta Bar ── */
+        .meta-bar {
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-2);
+        }
+        .meta-bar span { display: flex; align-items: center; gap: 5px; }
+        .meta-bar .val { color: var(--brand-2); }
+
+        /* ── Result Header ── */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .results-title { font-size: 1rem; font-weight: 700; color: var(--text-1); }
+        .results-sub   { font-size: 0.75rem; color: var(--text-3); margin-top: 2px; }
+
+        /* ── PDF Export Button ── */
+        .btn-pdf {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.55rem 1.1rem;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .2s;
+            box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+        }
+        .btn-pdf:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16,185,129,0.35); }
+
+        /* ── Finding Cards ── */
+        .findings-list { display: flex; flex-direction: column; gap: 10px; max-height: 560px; overflow-y: auto; padding-right: 4px; }
+        .findings-list::-webkit-scrollbar { width: 4px; }
+        .findings-list::-webkit-scrollbar-track { background: var(--bg-800); }
+        .findings-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
+
+        .finding-card {
+            background: var(--bg-700);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: border-color .2s, box-shadow .2s;
+            animation: slideIn 0.3s ease forwards;
+            animation-delay: calc(var(--i, 0) * 40ms);
+            opacity: 0;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .finding-card:hover { border-color: var(--border-2); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .finding-card.critical { border-left: 3px solid var(--critical); }
+        .finding-card.high     { border-left: 3px solid var(--high); }
+        .finding-card.medium   { border-left: 3px solid var(--medium); }
+
+        .finding-header {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .finding-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            padding: 3px 8px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .badge-critical-full { background: rgba(239,68,68,0.15); color: var(--critical); border: 1px solid rgba(239,68,68,0.3); }
+        .badge-high-full     { background: rgba(249,115,22,0.15); color: var(--high);     border: 1px solid rgba(249,115,22,0.3); }
+        .badge-medium-full   { background: rgba(234,179,8,0.15);  color: var(--medium);   border: 1px solid rgba(234,179,8,0.3); }
+
+        .finding-category { font-size: 0.82rem; font-weight: 600; color: var(--text-1); flex: 1; }
+        .finding-toggle { font-size: 0.8rem; color: var(--text-3); transition: transform .2s; }
+        .finding-toggle.open { transform: rotate(180deg); }
+
+        .finding-body {
+            display: none;
+            padding: 0 1rem 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+        .finding-body.open { display: block; }
+        .finding-field { margin-top: 0.6rem; }
+        .finding-field-label { font-size: 0.68rem; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+        .finding-field-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.73rem;
+            color: var(--text-2);
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.5rem 0.7rem;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        .finding-field-val.telemetry { color: #fcd34d; }
+
+        /* ── Empty / Idle States ── */
+        .state-clear {
+            background: rgba(34,197,94,0.05);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            color: var(--success);
+        }
+        .state-clear .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .state-clear .title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .state-clear .sub { font-size: 0.8rem; color: rgba(34,197,94,0.7); }
+
+        .state-idle {
+            background: var(--bg-800);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 4rem 2rem;
+            text-align: center;
+            color: var(--text-3);
+        }
+        .state-idle .icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+        .state-idle .title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-2); }
+        .state-idle .sub { font-size: 0.8rem; max-width: 360px; margin: 0 auto; line-height: 1.6; }
+
+        /* ── Flash Messages ── */
+        .flash-wrap { margin-bottom: 1rem; }
+        .flash {
+            padding: 0.7rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .flash.error   { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+        .flash.success { background: rgba(34,197,94,0.12);  border: 1px solid rgba(34,197,94,0.3);  color: #86efac; }
+
+        /* ── Loading Overlay ── */
+        .loading-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(10,15,30,0.85);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 52px; height: 52px;
+            border: 4px solid rgba(14,165,233,0.15);
+            border-top-color: var(--brand);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 0.9rem; font-weight: 600; color: var(--text-1); }
+        .loading-sub  { font-size: 0.75rem; color: var(--text-3); }
+
+        /* ── Pulse animation for live indicator ── */
+        .live-dot {
+            width: 7px; height: 7px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 1.4s ease infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        @media (max-width: 900px) {
+            .grid-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">🔬 Deconstructing Firmware...</div>
+    <div class="loading-sub">Scanning binary artifacts for exposure vectors</div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="nav-brand">
+        <span class="shield">🛡️</span>
+        IoT Firmware Auditor
+    </div>
+    <div class="nav-links">
+        <a href="/" class="nav-link active">Dashboard</a>
+        <a href="/history" class="nav-link">Scan History</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-wrap">
+        {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">
+            {% if cat == 'error' %}⚠️{% else %}✅{% endif %} {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="grid-layout">
+
+        <!-- ── Left Sidebar ── -->
+        <div style="display:flex; flex-direction:column; gap:1.25rem;">
+
+            <!-- Upload Card -->
+            <div class="card">
+                <div class="card-title">⬆ Ingest Firmware Target</div>
+                <form action="/" method="POST" enctype="multipart/form-data" id="scanForm">
+                    <div class="upload-zone" id="dropZone">
+                        <input type="file" name="firmware_file" id="firmwareInput" accept=".zip,.tar,.gz,.bin,.bz2,.img,.fw" required>
+                        <div class="upload-icon">📦</div>
+                        <div class="upload-text">Drag & drop or <strong style="color:var(--brand)">click to browse</strong></div>
+                        <div class="upload-accepted">.bin • .zip • .tar • .tar.gz • .fw • .img</div>
+                    </div>
+                    <div class="file-preview" id="filePreview">📎 <span id="fileName"></span></div>
+
+                    <button type="submit" class="btn-execute" id="executeBtn">
+                        <span>⚡</span> Execute Deconstruction Loop
+                    </button>
+                </form>
+
+                <!-- Severity Legend -->
+                <div class="legend">
+                    <div class="card-title" style="margin-bottom:0.6rem;">Severity Reference</div>
+                    <div class="legend-row">
+                        <span class="dot dot-critical"></span>
+                        <span class="legend-label c-critical">CRITICAL</span>
+                        <span class="legend-desc">— Credentials, Private Keys</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="dot dot-high"></span>
+                        <span class="legend-label c-high">HIGH</span>
+                        <span class="legend-desc">— API Tokens, Daemons</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="dot dot-medium"></span>
+                        <span class="legend-label c-medium">MEDIUM</span>
+                        <span class="legend-desc">— Shadow Files, Backdoor IPs</span>
+                    </div>
+                    <div class="legend-row">
+                        <span class="dot dot-ok"></span>
+                        <span class="legend-label c-ok">CLEAR</span>
+                        <span class="legend-desc">— No vectors found</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scan History Card -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <div class="card-title" style="margin:0;">🕒 Recent Scans</div>
+                    {% if history %}
+                    <form action="/clear-history" method="POST" style="display:inline;">
+                        <button type="submit" style="background:none;border:none;color:var(--text-3);font-size:0.7rem;cursor:pointer;padding:3px 6px;border-radius:4px;transition:color .2s;" onmouseover="this.style.color='var(--critical)'" onmouseout="this.style.color='var(--text-3)'">Clear</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% if history %}
+                <div class="history-list">
+                    {% for h in history[:5] %}
+                    <div class="history-item">
+                        <div class="history-item-name">{{ h.filename }}</div>
+                        <div class="history-item-meta">{{ h.timestamp }}</div>
+                        <div style="display:flex; gap:5px; flex-wrap:wrap; margin-top:4px;">
+                            {% if h.risk_label in ['CRITICAL', 'HIGH'] %}
+                            <span class="history-badge badge-critical">{{ h.risk_label }} — {{ h.risk_score }}/100</span>
+                            {% else %}
+                            <span class="history-badge badge-ok">{{ h.risk_label }} — {{ h.risk_score }}/100</span>
+                            {% endif %}
+                            <span class="history-badge" style="background:rgba(148,163,184,0.1);color:var(--text-2);">{{ h.total_findings }} findings</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if history|length > 5 %}
+                <a href="/history" style="display:block; text-align:center; margin-top:0.75rem; font-size:0.75rem; color:var(--brand); text-decoration:none;">View all {{ history|length }} scans →</a>
+                {% endif %}
+                {% else %}
+                <div class="no-history">No scans yet. Upload a firmware file to begin.</div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- ── Main Results Panel ── -->
+        <div class="main-panel">
+
+            {% if mode == "executed" %}
+
+            <!-- Risk Score Bar -->
+            <div class="risk-bar-wrap">
+                <div class="risk-score-circle" style="color:{{ risk_color }}; border-color:{{ risk_color }};">
+                    <span>{{ risk_score }}</span>
+                    <span class="risk-score-label">/ 100</span>
+                </div>
+
+                <div class="risk-divider"></div>
+
+                <div class="risk-stats">
+                    <div class="risk-stat">
+                        <div class="risk-stat-num c-critical">{{ telemetry | selectattr('severity', 'equalto', 'Critical') | list | length }}</div>
+                        <div class="risk-stat-label">Critical</div>
+                    </div>
+                    <div class="risk-stat">
+                        <div class="risk-stat-num c-high">{{ telemetry | selectattr('severity', 'equalto', 'High') | list | length }}</div>
+                        <div class="risk-stat-label">High</div>
+                    </div>
+                    <div class="risk-stat">
+                        <div class="risk-stat-num c-medium">{{ telemetry | selectattr('severity', 'equalto', 'Medium') | list | length }}</div>
+                        <div class="risk-stat-label">Medium</div>
+                    </div>
+                    <div class="risk-stat">
+                        <div class="risk-stat-num" style="color:var(--text-1);">{{ telemetry | length }}</div>
+                        <div class="risk-stat-label">Total</div>
+                    </div>
+                </div>
+
+                <div class="risk-status-badge" style="color:{{ risk_color }}; border-color:{{ risk_color }}; background:{{ risk_color }}18;">
+                    {{ risk_label }}
+                </div>
+            </div>
+
+            <!-- Scan Meta Bar -->
+            {% if meta %}
+            <div class="meta-bar">
+                <span>🗂 Target: <span class="val">{{ meta.filename }}</span></span>
+                <span>📏 Size: <span class="val">{{ meta.filesize }}</span></span>
+                <span>🕒 Scanned: <span class="val">{{ meta.timestamp }}</span></span>
+            </div>
+            {% endif %}
+
+            <!-- Results Panel -->
+            <div class="card">
+                <div class="results-header" style="margin-bottom:1rem;">
+                    <div>
+                        <div class="results-title">🔬 Deconstruction Registry</div>
+                        <div class="results-sub">Heuristic signatures matched across extraction tree</div>
+                    </div>
+                    <a href="/export/pdf" id="exportPdfBtn" class="btn-pdf">
+                        📥 Export PDF Report
+                    </a>
+                </div>
+
+                {% if telemetry | length == 0 %}
+                <div class="state-clear">
+                    <div class="icon">✅</div>
+                    <div class="title">Audit Passed — All Clear</div>
+                    <div class="sub">No exposed credential vectors, private keys, or sensitive leak heuristics matched inside the extraction tree.</div>
+                </div>
+                {% else %}
+                <div class="findings-list">
+                    {% for finding in telemetry %}
+                    {% set sev_lower = finding.severity | lower %}
+                    <div class="finding-card {{ sev_lower }}" style="--i:{{ loop.index0 }}">
+                        <div class="finding-header" onclick="toggleFinding(this)">
+                            {% if finding.severity == 'Critical' %}
+                            <span class="finding-badge badge-critical-full">⚠ Critical</span>
+                            {% elif finding.severity == 'High' %}
+                            <span class="finding-badge badge-high-full">🔶 High</span>
+                            {% else %}
+                            <span class="finding-badge badge-medium-full">🔸 Medium</span>
+                            {% endif %}
+                            <span class="finding-category">{{ finding.risk_category }}</span>
+                            <span class="finding-toggle">▼</span>
+                        </div>
+                        <div class="finding-body">
+                            <div class="finding-field">
+                                <div class="finding-field-label">Asset File Path</div>
+                                <div class="finding-field-val">{{ finding.source_file_path }}</div>
+                            </div>
+                            <div class="finding-field">
+                                <div class="finding-field-label">Extracted Telemetry</div>
+                                <div class="finding-field-val telemetry">{{ finding.raw_leak_telemetry }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% else %}
+
+            <!-- Idle State -->
+            <div class="state-idle">
+                <div class="icon">🔍</div>
+                <div class="title">Awaiting Firmware Target</div>
+                <div class="sub">Upload a firmware package (.bin, .zip, .tar, .fw) to begin automated reverse-engineering and vulnerability analysis.</div>
+                <div style="margin-top:1.5rem; display:flex; flex-wrap:wrap; gap:0.5rem; justify-content:center;">
+                    <span style="font-size:0.72rem; padding:4px 10px; border-radius:6px; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.15); color:var(--brand);">Hardcoded Credentials</span>
+                    <span style="font-size:0.72rem; padding:4px 10px; border-radius:6px; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.15); color:var(--brand);">Private RSA/SSH Keys</span>
+                    <span style="font-size:0.72rem; padding:4px 10px; border-radius:6px; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.15); color:var(--brand);">Cloud API Tokens</span>
+                    <span style="font-size:0.72rem; padding:4px 10px; border-radius:6px; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.15); color:var(--brand);">Backdoor Daemons</span>
+                    <span style="font-size:0.72rem; padding:4px 10px; border-radius:6px; background:rgba(14,165,233,0.08); border:1px solid rgba(14,165,233,0.15); color:var(--brand);">Embedded IPs</span>
+                </div>
+            </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── File Preview ──────────────────────────────────────────────────
+    const input    = document.getElementById('firmwareInput');
+    const preview  = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+
+    input.addEventListener('change', () => {
+        if (input.files.length > 0) {
+            const f = input.files[0];
+            fileName.textContent = `${f.name}  (${(f.size / 1024).toFixed(1)} KB)`;
+            preview.classList.add('visible');
+            dropZone.style.borderColor = 'var(--brand)';
+        }
+    });
+
+    // Drag & Drop feedback
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', () => dropZone.classList.remove('drag-over'));
+
+    // ── Loading Overlay ───────────────────────────────────────────────
+    const form    = document.getElementById('scanForm');
+    const overlay = document.getElementById('loadingOverlay');
+    const execBtn = document.getElementById('executeBtn');
+
+    form.addEventListener('submit', () => {
+        if (!input.files.length) return;
+        overlay.classList.add('active');
+        execBtn.disabled = true;
+        execBtn.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;"></div> Scanning...';
+    });
+
+    // ── Collapsible Finding Cards ─────────────────────────────────────
+    function toggleFinding(header) {
+        const body   = header.nextElementSibling;
+        const toggle = header.querySelector('.finding-toggle');
+        body.classList.toggle('open');
+        toggle.classList.toggle('open');
+    }
+
+    // Auto-expand first critical finding
+    document.addEventListener('DOMContentLoaded', () => {
+        const firstCard = document.querySelector('.finding-card.critical .finding-header');
+        if (firstCard) toggleFinding(firstCard);
+    });
+</script>
+</body>
+</html>
