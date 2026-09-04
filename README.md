@@ -1,6 +1,4 @@
 # 🛡️ IoT Firmware Vulnerability Scanner & Security Auditor
-**Author:** Dhukka Haris | [GitHub](https://github.com/Dhukka123H) • [LinkedIn](https://www.linkedin.com/in/dhukka-haris-6716992ba/)  
-**Port:** `5000` | **Tech Stack:** Python 3, Flask, ReportLab PDF, Vanilla CSS, JetBrains Mono
 
 ---
 
@@ -174,26 +172,11 @@ api_key="AKIAIOSFODNN7EXAMPLE_KEY"
 
 ---
 
-## 💼 Resume Bullet Points
+--- 
 
-- **Engineered an automated IoT firmware security auditing tool** using Python, Flask, and heuristic pattern-matching to identify embedded vulnerabilities before device deployment.
-- **Designed a weighted risk scoring engine (0–100)** with severity floors — ensuring a single hardcoded credential always scores HIGH or above, never misleadingly LOW.
-- **Implemented in-memory PDF generation** with ReportLab's `BytesIO` pipeline, eliminating disk write vulnerabilities and producing isolated per-scan compliance reports.
-- **Built a zero-persistence security architecture**: uploads auto-deleted, extraction trees wiped, workspace purged on startup — no firmware data ever lingers.
-- **Automated detection of 6 vulnerability classes** across firmware trees: credentials, private keys, API tokens, vulnerable daemons, shadow files, and backdoor IP addresses.
+**Author:** Dhukka Haris 
+- 📧 Contact: [hdhukka323@gmail.com]
+- 🔗 GitHub: [Dhukka123H](https://github.com/Dhukka123H/)
+- 🔗 LinkedIn: [Dhukka Haris](https://www.linkedin.com/in/dhukka-haris-6716992ba/) 
 
 ---
-
-## 💬 Technical Interview Cheat Sheet
-
-> **Q: How does the tool deconstruct proprietary firmware binaries?**  
-> **A:** *"The system runs a 4-stage extraction pipeline: ZIP → TAR → Binwalk (recursive `-e -M` with magic byte parsing for SquashFS/CramFS) → raw binary fallback. This handles virtually any firmware archive format."*
-
-> **Q: Why does the risk score show 60/100 for just one hardcoded password?**  
-> **A:** *"The scoring uses severity floors — any Critical finding sets a minimum of 60, so the tool never downplays serious vulnerabilities. A single hardcoded root password is always classified HIGH regardless of finding count. 100/100 is reserved for firmware with multiple severe findings across all categories."*
-
-> **Q: How do you prevent uploaded firmware from being exposed?**  
-> **A:** *"The upload is deleted immediately after extraction. The extracted tree is wiped after analysis. Both folders are purged clean on server startup. The PDF is generated in RAM using `BytesIO` — never written to disk. Results are stored in Flask's server-side session, so nothing sensitive is ever in global state or on disk."*
-
-> **Q: What is the attack surface reduction achieved by this architecture?**  
-> **A:** *"Zero persistent artifacts means no exfiltration window for uploaded firmware, no residual data between users, and no static report file that could be accessed by an unauthorized party. Each request is fully isolated."*
